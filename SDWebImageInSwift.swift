@@ -7,15 +7,16 @@
 
 import UIKit
 
-typealias webImageCompletionWithFinishedBlock = (UIImage?,Error?,Bool?) ->Void
-typealias webImageDownLoadCompletionBlock = (UIImage?,Error?,Data?,Bool?) ->Void
-typealias webImageQueryCompletionBlock = (UIImage?) ->Void
+typealias webImageCompletionWithFinishedBlock = (_ image : UIImage?, _ error : Error?, _ finished : Bool) ->Void
+typealias webImageDownLoadCompletionBlock = (_ image : UIImage?, _ error : Error?,_ date : Data?, _ finished : Bool) ->Void
+typealias webImageQueryCompletionBlock = (_ image : UIImage?) ->Void
 typealias webImageNoParamsBlock = () ->Void
+typealias webImageLoadProgressBlock = (_ receiveSize : Int64, _ totalSize : Int64) ->Void
 
 struct webImageKey {
     static var imageUrlKey : String = "imageUrlKey"
     static var loadOperationKey : String = "loadOperationKey"
-
+    
 }
 
 extension NSObject{
@@ -51,58 +52,50 @@ extension String{
 
 extension UIImageView{
     
-    var operationDic : Dictionary<String,Array<webImageGainOperation>>! {
-        get{
-            var opDic : Dictionary<String,Array<webImageGainOperation>>? = objc_getAssociatedObject(self, &webImageKey.loadOperationKey) as? Dictionary<String,Array<webImageGainOperation>>
-            if opDic == nil {
-                opDic = [String : Array<webImageGainOperation>]()
-                objc_setAssociatedObject(self, &webImageKey.loadOperationKey, opDic, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-                return opDic
-            }
-            return opDic!
-        }
-        set(dic){
-            objc_setAssociatedObject(self, &webImageKey.loadOperationKey, dic, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
-    }
-    
-    /// 给UIImageView设置图片
+    /// 图片设置方法
     ///
     /// - Parameters:
-    ///   - imageUrl: 网络图片URL
-    ///   - placeholderImage: 本地置位图片
+    ///   - imageUrl: 图片地址
+    ///   - placeholderImage: 置位图片
+    ///   - progressBlock: 图片下载进度
     func setImageWith(imageUrl : URL!,
-                      placeholderImage : UIImage?) {
+                      placeholderImage : UIImage? = nil,
+                      progressBlock : webImageLoadProgressBlock? = nil,
+                      completeBlock : webImageCompletionWithFinishedBlock? = nil) {
         self.cancelImageGainOperationWith(key: "UIImageViewImageLoad")
         
         objc_setAssociatedObject(self, &webImageKey.imageUrlKey, imageUrl, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
         
         if placeholderImage != nil {
-            //GCD用法在Swift中略有变化，Operation更便于使用
-            //1.GCD方式
-//            DispatchQueue.global().async {
-//                DispatchQueue.main.async {
-//                    self.image = placeholderImage
-//                }
-//            }
-            //2.Operation方式
+            
             OperationQueue.main.addOperation({
                 [unowned self]() in
                 self.image = placeholderImage
             })
         }
-        
-        let operation : webImageGainOperation = SDWebImageInSwift.shareInstance.gainImageWith(url: imageUrl) { [unowned self](downLoadImage, error, finished) in
-            
-            OperationQueue.main.addOperation({ 
-                [unowned self]() in
-                
-                if downLoadImage != nil {
-                    self.image = downLoadImage
-
-                }
+        let operation : webImageGainOperation =
+            SDWebImageInSwift.shareInstance.gainImage(with: imageUrl,
+                                                      progress: {
+                                                        (receivedSize, totalSize) in
+                                                        if let progress = progressBlock{
+                                                            progress(receivedSize,totalSize)
+                                                        }
+            },
+                                                      complete: { (image, error, finish) in
+                                                        
+                                                        if let innerCom = completeBlock{
+                                                            innerCom(image,error,finish)
+                                                        }
+                                                        
+                                                        OperationQueue.main.addOperation {
+                                                            [weak self]() in
+                                                            if let innerImage = image{
+                                                                self?.image = innerImage
+                                                            }
+                                                        }
+                                                        
             })
-        }
+        
         
         self.setGainImage(operation: operation, key: "UIImageViewImageLoad")
     }
@@ -132,6 +125,21 @@ extension UIImageView{
         operationDicInner.updateValue(operationArr!, forKey: key)
         self.operationDic = operationDicInner
     }
+    
+    var operationDic : Dictionary<String,Array<webImageGainOperation>>! {
+        get{
+            var opDic : Dictionary<String,Array<webImageGainOperation>>? = objc_getAssociatedObject(self, &webImageKey.loadOperationKey) as? Dictionary<String,Array<webImageGainOperation>>
+            if opDic == nil {
+                opDic = [String : Array<webImageGainOperation>]()
+                objc_setAssociatedObject(self, &webImageKey.loadOperationKey, opDic, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                return opDic
+            }
+            return opDic!
+        }
+        set(dic){
+            objc_setAssociatedObject(self, &webImageKey.loadOperationKey, dic, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
 }
 
 
@@ -148,8 +156,9 @@ class SDWebImageInSwift: NSObject {
     var imageCache : imageCacheInSwift = imageCacheInSwift.shareInstance  //图片缓存对象
     var imageLoder : imageLoadInSwift = imageLoadInSwift.shareInstance  //图片下载对象
     
-    func gainImageWith(url : URL,complete : @escaping webImageCompletionWithFinishedBlock) -> webImageGainOperation {
-        //源码处有对url类型的判断，此处由于之前写成了URL!,因此不再额外做判断
+    func gainImage(with url : URL,
+                   progress : webImageLoadProgressBlock?,
+                   complete : webImageCompletionWithFinishedBlock?) -> webImageGainOperation {
         
         let operation : webImageGainOperation? = webImageGainOperation.init()
         
@@ -167,58 +176,66 @@ class SDWebImageInSwift: NSObject {
         }
         
         let key : String = url.absoluteString
-        operation?.cacheOperation = imageCache.queryDiskCacheFor(key: key, done: { [unowned self](cachedImage) in
+        operation?.cacheOperation = imageCache.queryDiskCacheFor(key: key, done: { [weak self](cachedImage) in
             
             if (operation?.isCancelled)! {
-                self.webImageCustomSynchronized(lock: self.runningoperatins as AnyObject, f: {
-                    self.runningoperatins.remove(operation!)
+                self?.webImageCustomSynchronized(lock: self?.runningoperatins as AnyObject, f: {
+                    self?.runningoperatins.remove(operation!)
                 })
-                
                 return
             }
             
-            if cachedImage != nil {
-                complete(cachedImage,nil,true)
+            if let innerImage = cachedImage,let innerComplete = complete{
+                innerComplete(innerImage, nil, true)
                 return
             }
             
-            let imageLoadOperation : webImageDownLoaderOperation =  self.imageLoder.downLoadImageWith(url: url, complete: { (image, error, imageData,finished) in
-                
-                if operation == nil || operation?.isCancelled == true {
-                    
-                }else if error != nil {
-                    OperationQueue.main.addOperation({ 
-                        () in
-                        complete(nil,error,finished)
-                        
-                    })
-                    
-                    self.webImageCustomSynchronized(lock: self.failedURLs as AnyObject, f: {
-                        self.failedURLs.insert(url)
-                    })
-                    
-                }else{
-                    
-                    self.imageCache.store(downLoadImage: image, and: imageData, forGiven: key)
-                    
-                    OperationQueue.main.addOperation {
-                        complete(image,error,finished)
-                    }
-                }
-                
-                if finished == true {
-                    self.webImageCustomSynchronized(lock: self.runningoperatins, f: {
-                        self.runningoperatins.remove(operation!)
-                    })
-                }
-                
-            })
+            let imageLoadOperation : webImageDownLoaderOperation =
+                (self?.imageLoder.downLoadImage(with: url,
+                                                progress: { (receivedSize, totalSize) in
+                                                    if let innerPro = progress{
+                                                        innerPro(receivedSize,totalSize)
+                                                    }
+                },
+                                                complete: { [weak self](image, error, data, finished) in
+                                                    if let innerCom = complete{
+                                                        guard let innerOp = operation else {
+                                                            print("image gain operation is nil")
+                                                            return
+                                                        }
+                                                        if finished == true{
+                                                            self?.webImageCustomSynchronized(lock: (self?.runningoperatins)!, f: {
+                                                                self?.runningoperatins.remove(innerOp)
+                                                            })
+                                                        }
+                                                        
+                                                        guard let innerError = error else{
+                                                            if let innerImage = image,let innerData = data{
+                                                                self?.imageCache.store(downLoadImage: innerImage, and: innerData, forGiven: key)
+                                                                OperationQueue.main.addOperation {
+                                                                    innerCom(innerImage,nil,finished)
+                                                                }
+                                                            }
+                                                            return
+                                                        }
+                                                        self?.webImageCustomSynchronized(lock: self?.failedURLs as AnyObject, f: {
+                                                            self?.failedURLs.insert(url)
+                                                        })
+                                                        OperationQueue.main.addOperation {
+                                                            innerCom(nil,innerError,finished)
+                                                        }
+                                                    }
+                }))!
+            
+            
+            
+            
             
             operation?.cancelBlock = {
                 () in
                 imageLoadOperation.cancel()
-                self.webImageCustomSynchronized(lock: operation!, f: {
-                    self.runningoperatins.remove(operation!)
+                self?.webImageCustomSynchronized(lock: operation!, f: {
+                    self?.runningoperatins.remove(operation!)
                 })
             }
         })!
@@ -243,7 +260,7 @@ class imageCacheInSwift : NSObject{
         
         webImageSerialQueue = OperationQueue.init()
         webImageSerialQueue.maxConcurrentOperationCount = 1
-
+        
         fileManager = FileManager.init()
         
         let diskPath : String = NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)[0]
@@ -251,14 +268,13 @@ class imageCacheInSwift : NSObject{
     }
     
     func queryDiskCacheFor(key : String?,done : @escaping webImageQueryCompletionBlock) -> Operation? {
-        if key == nil {
+        
+        guard let innerKey = key else {
             done(nil)
             return nil
         }
         
-        //查找存放在cache中的图片
-        let cachedImage : UIImage? = memCache.object(forKey: key as AnyObject) as? UIImage
-        if cachedImage != nil {
+        if let cachedImage = memCache.object(forKey: innerKey as AnyObject) as? UIImage{
             done(cachedImage)
             return nil
         }
@@ -274,13 +290,16 @@ class imageCacheInSwift : NSObject{
             
             autoreleasepool(invoking: { () -> Void in
                 //查找存放在sandbox中的图片
-                let diskImage : UIImage? = self.diskImageFor(key: key!)
-                if diskImage != nil {
-                    let cost : CGFloat = (diskImage?.size.width)! * (diskImage?.size.height)! * (diskImage?.scale)! * (diskImage?.scale)!
-                    self.memCache.setObject(diskImage!, forKey: key as AnyObject, cost: Int.init(cost))
-                }
-                OperationQueue.main.addOperation {
-                    done(diskImage)
+                if let diskImage = self.diskImageFor(key: key!) {
+                    let cost = diskImage.size.width * diskImage.size.height * diskImage.scale * diskImage.scale
+                    self.memCache.setObject(diskImage, forKey: key as AnyObject, cost: Int.init(cost))
+                    OperationQueue.main.addOperation {
+                        done(diskImage)
+                    }
+                }else{
+                    OperationQueue.main.addOperation {
+                        done(nil)
+                    }
                 }
             })
             
@@ -295,7 +314,7 @@ class imageCacheInSwift : NSObject{
         memCache.setObject(downLoadImage, forKey: key as AnyObject, cost: imageCost)
         
         //存储于Disk
-        webImageSerialQueue.addOperation { 
+        webImageSerialQueue.addOperation {
             [unowned self]() in
             self.storeImageInDisk(downLoadImage: downLoadImage, and: imageData, forGiven: key)
         }
@@ -311,8 +330,8 @@ class imageCacheInSwift : NSObject{
         
         let alphaInfo : CGImageAlphaInfo = (downLoadImage.cgImage?.alphaInfo)!
         var imageIsPNG : Bool = !(alphaInfo == CGImageAlphaInfo.none ||
-                                  alphaInfo == CGImageAlphaInfo.noneSkipFirst ||
-                                  alphaInfo == CGImageAlphaInfo.noneSkipLast)
+            alphaInfo == CGImageAlphaInfo.noneSkipFirst ||
+            alphaInfo == CGImageAlphaInfo.noneSkipLast)
         
         if imageData.count > PNGSignatureData.count {
             
@@ -345,20 +364,34 @@ class imageCacheInSwift : NSObject{
     
     func diskImageFor(key : String) -> UIImage? {
         
-        var diskCahcedImage : UIImage?
-        var diskCachedImageData : Data?
-        
         let imageKeyInMD5 = key.md5() + "." + (URL.init(string: key)?.pathExtension)!
         let defaultPath : URL = (URL.init(string: diskCachePath)?.appendingPathComponent(imageKeyInMD5))!
-        let dataInNS : NSData? = NSData.init(contentsOfFile: defaultPath.absoluteString)
         
-        if dataInNS != nil {
-            diskCachedImageData = dataInNS! as Data
-            diskCahcedImage = UIImage.init(data: diskCachedImageData!)
+        if let dataInNS = NSData.init(contentsOfFile: defaultPath.absoluteString) {
+            print("catch Image In \(defaultPath)")
+            let diskCahcedImage = UIImage.init(data: dataInNS as Data)
             return diskCahcedImage
         }
         
         return nil
+    }
+    
+    func removeMemory() {
+        self.memCache.removeAllObjects()
+        print("helloMemRemove")
+    }
+    
+    func removeDisk() {
+        webImageSerialQueue.addOperation {
+            [weak self] in
+            do{
+                try self?.fileManager.removeItem(atPath: (self?.diskCachePath)!)
+                try self?.fileManager.createDirectory(atPath: (self?.diskCachePath)!,
+                                                      withIntermediateDirectories: true,
+                                                      attributes: nil)
+            }
+            catch _ { }
+        }
     }
     
 }
@@ -374,26 +407,39 @@ class imageLoadInSwift: NSObject {
     let header = ["Accept" : "image/*;q=0.8"];
     let operationQueue : OperationQueue = OperationQueue.init()
     
-    func downLoadImageWith(url : URL,complete : @escaping webImageDownLoadCompletionBlock) -> webImageDownLoaderOperation {
+    func downLoadImage(with url : URL,
+                       progress : webImageLoadProgressBlock?,
+                       complete : webImageDownLoadCompletionBlock?) -> webImageDownLoaderOperation {
         var operation : webImageDownLoaderOperation!
         
-        addProgressCallBack(complete: complete, url: url) { 
-            [unowned self]() in
-            var request : URLRequest = URLRequest.init(url: url, cachePolicy: URLRequest.CachePolicy.useProtocolCachePolicy, timeoutInterval: 10.0)
-            request.httpShouldUsePipelining = true
-            request.allHTTPHeaderFields = self.header
-            
-            operation = webImageDownLoaderOperation.init(request: request, completed: { (downloadImage, error, downloadImageData,finished) in
-                complete(downloadImage,error,downloadImageData,finished)
-            })
-            self.operationQueue.addOperation(operation)
-            
+        if let innerCom = complete,let innerPro = progress {
+            addProgressCallBack(complete: innerCom,
+                                progress: innerPro,
+                                url: url) {
+                                    [weak self]() in
+                                    var request : URLRequest = URLRequest.init(url: url, cachePolicy: URLRequest.CachePolicy.useProtocolCachePolicy, timeoutInterval: 10.0)
+                                    request.httpShouldUsePipelining = true
+                                    request.allHTTPHeaderFields = self?.header
+                                    operation = webImageDownLoaderOperation.init(request: request,
+                                                                                 progress: { (receivedSie, totalSize) in
+                                                                                    innerPro(receivedSie,totalSize)
+                                    },
+                                                                                 completed: { (image, error, data, finished) in
+                                                                                    innerCom(image,error,data,finished)
+                                    })
+                                    
+                                    self?.operationQueue.addOperation(operation)
+            }
         }
+        
         
         return operation
     }
     
-    func addProgressCallBack(complete : webImageDownLoadCompletionBlock,url : URL,callBack : webImageNoParamsBlock) {
+    func addProgressCallBack(complete : webImageDownLoadCompletionBlock,
+                             progress : webImageLoadProgressBlock,
+                             url : URL,
+                             callBack : webImageNoParamsBlock) {
         callBack()
     }
 }
@@ -402,16 +448,19 @@ class imageLoadInSwift: NSObject {
 class webImageDownLoaderOperation: Operation {
     
     var requestCopyed : URLRequest!
+    var progressBlock : webImageLoadProgressBlock!
     var completeBlock : webImageDownLoadCompletionBlock!
     var session : URLSession!
     var dataTask_request : URLSessionDataTask!
     
-    var receiveData : Data?
+    var receiveData = Data()
     
     init(request : URLRequest,
+         progress : @escaping webImageLoadProgressBlock,
          completed : @escaping webImageDownLoadCompletionBlock) {
         
         self.requestCopyed = request
+        self.progressBlock = progress
         self.completeBlock = completed
     }
     
@@ -439,24 +488,32 @@ class webImageDownLoaderOperation: Operation {
 //MARK:---URLSession(URLSessionDataDelegate)
 extension webImageDownLoaderOperation : URLSessionDataDelegate{
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        print("complete")
-        let length = receiveData?.count
-        var newImage : UIImage? = nil
-        print(length ?? -1)
-        newImage = UIImage.init(data: receiveData!)!
         
-        self.completeBlock(newImage,nil,receiveData,true)
+        guard let innerError = error else {
+            if let innerImage = UIImage.init(data: receiveData) {
+                
+                self.completeBlock(innerImage,nil,receiveData,true)
+            }else{
+                self.completeBlock(nil,nil,receiveData,false)
+            }
+            return
+        }
+        
+        self.completeBlock(nil,innerError,receiveData,false)
+        
+        receiveData = Data.init()
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        print("receive")
-        receiveData = data
+        
+        receiveData.append(data)
+        self.progressBlock(Int64(receiveData.count),dataTask.response?.expectedContentLength ?? 0)
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
         let newRes : HTTPURLResponse = response as! HTTPURLResponse
-        print(newRes.statusCode)
-        print("response")
+        print("responesCode = \(newRes.statusCode)")
+        
         completionHandler(URLSession.ResponseDisposition.allow)
     }
     
