@@ -1,8 +1,5 @@
 //
 //  SDWebImageInSwift.swift
-//  JSCallOC
-//
-//  SDWebImage的简化版
 //
 //  Created by wangzhaoyun on 2017/5/22.
 //  Copyright © 2017年 wangdan. All rights reserved.
@@ -74,7 +71,8 @@ extension UIImageView{
     /// - Parameters:
     ///   - imageUrl: 网络图片URL
     ///   - placeholderImage: 本地置位图片
-    func setImageWith(imageUrl : URL!,placeholderImage : UIImage?) {
+    func setImageWith(imageUrl : URL!,
+                      placeholderImage : UIImage?) {
         self.cancelImageGainOperationWith(key: "UIImageViewImageLoad")
         
         objc_setAssociatedObject(self, &webImageKey.imageUrlKey, imageUrl, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
