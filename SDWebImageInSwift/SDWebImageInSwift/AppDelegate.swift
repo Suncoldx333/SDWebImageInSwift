@@ -15,9 +15,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+        let mainVC = ViewController()
         
-        
-        
+        let nav = UINavigationController.init(rootViewController: mainVC)
+        self.window?.rootViewController = nav
         return true
     }
 

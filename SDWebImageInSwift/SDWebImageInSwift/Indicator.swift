@@ -59,7 +59,7 @@ class SystemIndicator: Indicator {
     }
     
     init() {
-        systemIndicatorView = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorViewStyle.gray)
+        systemIndicatorView = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorViewStyle.white)
         systemIndicatorView.autoresizingMask = [UIViewAutoresizing.flexibleLeftMargin,.flexibleRightMargin,.flexibleBottomMargin,.flexibleTopMargin]
     }
     

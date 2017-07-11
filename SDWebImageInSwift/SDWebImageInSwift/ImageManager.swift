@@ -81,11 +81,9 @@ extension UIImageView{
         
         objc_setAssociatedObject(self, &webImageKey.imageUrlKey, imageUrl, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN)
         
-        if let image = placeholderImage {
-            OperationQueue.main.addOperation {
-                [weak self]() in
-                self?.image = image
-            }
+        OperationQueue.main.addOperation {
+            [weak self]() in
+            self?.image = placeholderImage
         }
         let innerIndi = indicator
         innerIndi?.startAnimation()
@@ -161,6 +159,7 @@ extension UIImageView{
     }
 }
 
+//MARK:---图片管理类
 class ImageManager: NSObject {
     
     static let shareInstance = ImageManager()

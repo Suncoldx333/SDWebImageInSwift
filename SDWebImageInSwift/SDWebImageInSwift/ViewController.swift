@@ -35,8 +35,29 @@ class ViewController: UIViewController {
     func initUI() {
         self.view.backgroundColor = ColorMethodho(hexValue: 0xffffff)
         
+        let leftBt = UIBarButtonItem.init(title: "ClearCache",
+                                          style: UIBarButtonItemStyle.plain,
+                                          target: self,
+                                          action: #selector(clearCache))
+        self.navigationItem.leftBarButtonItem = leftBt
+        
+        let rightBt = UIBarButtonItem.init(title: "Reload",
+                                           style: UIBarButtonItemStyle.plain,
+                                           target: self,
+                                           action: #selector(reloadList))
+        self.navigationItem.rightBarButtonItem = rightBt
+        
         tableView.register(TableViewCell.self, forCellReuseIdentifier: cellKey)
         self.view.addSubview(tableView)
+    }
+    
+    func clearCache() {
+        imageCacheInSwift.shareInstance.removeMemory()
+        imageCacheInSwift.shareInstance.removeDisk()
+    }
+    
+    func reloadList() {
+        tableView.reloadData()
     }
 
 }
@@ -81,7 +102,7 @@ extension ViewController : UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: cellKey) as! TableViewCell
-        cell.cellImage.indicatorType = .progress
+        cell.cellImage.indicatorType = .activity
         return cell
 
     }
