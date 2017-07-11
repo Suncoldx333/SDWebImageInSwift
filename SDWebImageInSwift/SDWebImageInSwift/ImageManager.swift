@@ -92,9 +92,9 @@ extension UIImageView{
             ImageManager.shareInstance.gainImage(with: imageUrl,
                                                       progress: {
                                                         (receivedSize, totalSize) in
-                                                        if let progress = progressBlock,innerIndi is ProgressIndicator{
+                                                        if let progress = progressBlock,let aindi = innerIndi as? ProgressIndicator{
                                                             let percent = Double.init(receivedSize) * 1.000 / (Double.init(totalSize) * 1.000)
-                                                            (innerIndi as! ProgressIndicator).makeProgress(received: Float.init(percent))
+                                                            aindi.makeProgress(received: Float.init(percent))
                                                             progress(receivedSize,totalSize)
                                                         }
             },
