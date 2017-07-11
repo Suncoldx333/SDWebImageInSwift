@@ -15,6 +15,8 @@
 		18F077DE1F146CA200FD7BF0 /* ImageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F077DD1F146CA200FD7BF0 /* ImageManager.swift */; };
 		18F077E01F146D8E00FD7BF0 /* TableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F077DF1F146D8E00FD7BF0 /* TableViewCell.swift */; };
 		18F077E21F146DB700FD7BF0 /* GloBalDefine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F077E11F146DB700FD7BF0 /* GloBalDefine.swift */; };
+		18F077E51F14A4DC00FD7BF0 /* Indicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F077E41F14A4DC00FD7BF0 /* Indicator.swift */; };
+		18F077E71F14B07600FD7BF0 /* Box.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F077E61F14B07600FD7BF0 /* Box.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +31,8 @@
 		18F077DF1F146D8E00FD7BF0 /* TableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableViewCell.swift; sourceTree = "<group>"; };
 		18F077E11F146DB700FD7BF0 /* GloBalDefine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GloBalDefine.swift; sourceTree = "<group>"; };
 		18F077E31F14727C00FD7BF0 /* SDWebImageInSwift-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SDWebImageInSwift-Bridging-Header.h"; path = "SDWebImageInSwift/SDWebImageInSwift-Bridging-Header.h"; sourceTree = "<group>"; };
+		18F077E41F14A4DC00FD7BF0 /* Indicator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Indicator.swift; sourceTree = "<group>"; };
+		18F077E61F14B07600FD7BF0 /* Box.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Box.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +83,8 @@
 			isa = PBXGroup;
 			children = (
 				18F077DD1F146CA200FD7BF0 /* ImageManager.swift */,
+				18F077E41F14A4DC00FD7BF0 /* Indicator.swift */,
+				18F077E61F14B07600FD7BF0 /* Box.swift */,
 			);
 			name = SourceData;
 			sourceTree = "<group>";
@@ -157,6 +163,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				18F077E21F146DB700FD7BF0 /* GloBalDefine.swift in Sources */,
+				18F077E71F14B07600FD7BF0 /* Box.swift in Sources */,
+				18F077E51F14A4DC00FD7BF0 /* Indicator.swift in Sources */,
 				18F077DE1F146CA200FD7BF0 /* ImageManager.swift in Sources */,
 				18F077E01F146D8E00FD7BF0 /* TableViewCell.swift in Sources */,
 				18F077CB1F146BE900FD7BF0 /* ViewController.swift in Sources */,

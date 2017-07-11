@@ -45,7 +45,7 @@ func ViewHeight(v : UIView) -> CGFloat{
     return height
 }
 
-func ViewCenter(v : UIView) -> CGPoint{
+func ViewInnerCenter(v : UIView) -> CGPoint{
     let center : CGPoint = CGPoint.init(x: v.frame.width / 2, y: v.frame.height / 2)
     return center
 }

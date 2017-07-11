@@ -81,6 +81,7 @@ extension ViewController : UITableViewDelegate,UITableViewDataSource{
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: cellKey) as! TableViewCell
+        cell.cellImage.indicatorType = .progress
         return cell
 
     }

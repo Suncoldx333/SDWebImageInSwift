@@ -17,11 +17,56 @@ typealias webImageLoadProgressBlock = (_ receiveSize : Int64, _ totalSize : Int6
 struct webImageKey {
     static var imageUrlKey : String = "imageUrlKey"
     static var loadOperationKey : String = "loadOperationKey"
-    
+    static var indicatorKey : String = "indicator"
+    static var indicatorTypeKey : String = "indicatorTypeKey"
 }
 
 extension UIImageView{
     
+    var indicator : Indicator?{
+        get{
+            return (objc_getAssociatedObject(self, &webImageKey.indicatorKey) as? Box<Indicator?>)?.outValue
+        }
+        set{
+            if let preIndicator = indicator {
+                preIndicator.view.removeFromSuperview()
+            }
+            
+            if var newIndicator = newValue {
+                newIndicator.view.frame = self.frame
+                newIndicator.viewCenter = ViewInnerCenter(v: self)
+                newIndicator.view.isHidden = true
+                self.addSubview(newIndicator.view)
+            }
+            
+            objc_setAssociatedObject(self,
+                                     &webImageKey.indicatorKey,
+                                     Box.init(value: newValue),
+                                     objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
+    
+    var indicatorType : IndicatorType{
+        get{
+            let inditype = (objc_getAssociatedObject(self, &webImageKey.indicatorTypeKey) as? Box<IndicatorType?>)?.outValue
+            return inditype ?? .none
+        }
+        set{
+            switch newValue {
+            case .none:
+                indicator = nil
+            case .activity:
+                indicator = SystemIndicator.init()
+            case .progress:
+                indicator = ProgressIndicator.init()
+            }
+            
+            objc_setAssociatedObject(self,
+                                     &webImageKey.indicatorTypeKey,
+                                     Box.init(value: newValue),
+                                     objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+    }
     /// 图片设置方法
     ///
     /// - Parameters:
@@ -42,16 +87,22 @@ extension UIImageView{
                 self?.image = image
             }
         }
+        let innerIndi = indicator
+        innerIndi?.startAnimation()
         
         let operation : webImageGainOperation =
             ImageManager.shareInstance.gainImage(with: imageUrl,
                                                       progress: {
                                                         (receivedSize, totalSize) in
-                                                        if let progress = progressBlock{
+                                                        if let progress = progressBlock,innerIndi is ProgressIndicator{
+                                                            let percent = Double.init(receivedSize) * 1.000 / (Double.init(totalSize) * 1.000)
+                                                            (innerIndi as! ProgressIndicator).makeProgress(received: Float.init(percent))
                                                             progress(receivedSize,totalSize)
                                                         }
             },
                                                       complete: { (image, error, finish) in
+                                                        
+                                                        innerIndi?.stopAniamtion()
                                                         
                                                         if let innerCom = completeBlock{
                                                             innerCom(image,error,finish)
@@ -70,6 +121,7 @@ extension UIImageView{
         self.setGainImage(operation: operation, key: "UIImageViewImageLoad")
     }
     
+    //以下两个方法及一个变量，其实并不是ImageView的扩展，仅仅是setImageWith的工具方法，需要考虑一个方案使这两个方法存在于更适合的地方
     private func cancelImageGainOperationWith(key : String) {
         var operationDicInner : Dictionary<String,Array<webImageGainOperation>> = self.operationDic
         if let operationArr = operationDicInner[key] {
@@ -93,18 +145,18 @@ extension UIImageView{
         self.operationDic = operationDicInner
     }
     
-    var operationDic : Dictionary<String,Array<webImageGainOperation>>! {
+    private var operationDic : Dictionary<String,Array<webImageGainOperation>>! {
         get{
-            var opDic : Dictionary<String,Array<webImageGainOperation>>? = objc_getAssociatedObject(self, &webImageKey.loadOperationKey) as? Dictionary<String,Array<webImageGainOperation>>
+            var opDic = (objc_getAssociatedObject(self, &webImageKey.loadOperationKey) as? Box<Dictionary<String,Array<webImageGainOperation>>>)?.outValue
             if opDic == nil {
                 opDic = [String : Array<webImageGainOperation>]()
-                objc_setAssociatedObject(self, &webImageKey.loadOperationKey, opDic, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                objc_setAssociatedObject(self, &webImageKey.loadOperationKey, Box.init(value: opDic), objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                 return opDic
             }
             return opDic!
         }
         set{
-            objc_setAssociatedObject(self, &webImageKey.loadOperationKey, newValue, objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            objc_setAssociatedObject(self, &webImageKey.loadOperationKey, Box.init(value: newValue), objc_AssociationPolicy.OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         }
     }
 }
