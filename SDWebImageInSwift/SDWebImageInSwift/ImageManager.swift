@@ -170,7 +170,7 @@ class ImageManager: NSObject {
     var failedURLs : Set = Set<URL>.init()  //下载失败的URL集合
     var runningoperatins : NSMutableArray = NSMutableArray.init()  //正在执行的任务的集合,array的remove方法没有NSArray的直接
     var imageCache : imageCacheInSwift = imageCacheInSwift.shareInstance  //图片缓存对象
-    var imageLoder : imageLoadInSwift = imageLoadInSwift.shareInstance  //图片下载对象
+    var imageLoder : imageLoadInSwift = imageLoadInSwift.init()  //图片下载对象
     
     func gainImage(with url : URL,
                    progress : webImageLoadProgressBlock?,
@@ -417,11 +417,11 @@ class imageCacheInSwift : NSObject{
 }
 
 //MARK:---图片下载类
-class imageLoadInSwift: NSObject {
-    static let shareInstance = imageLoadInSwift()
-    private override init() {
-        
-    }
+struct imageLoadInSwift {
+//    static let shareInstance = imageLoadInSwift()
+//    private override init() {
+//        
+//    }
     
     let header = ["Accept" : "image/*;q=0.8"];
     let operationQueue : OperationQueue = OperationQueue.init()
@@ -442,10 +442,10 @@ class imageLoadInSwift: NSObject {
             addProgressCallBack(complete: innerCom,
                                 progress: innerPro,
                                 url: url) {
-                                    [weak self]() in
+                                    () in
                                     var request : URLRequest = URLRequest.init(url: url, cachePolicy: URLRequest.CachePolicy.useProtocolCachePolicy, timeoutInterval: 10.0)
                                     request.httpShouldUsePipelining = true
-                                    request.allHTTPHeaderFields = self?.header
+                                    request.allHTTPHeaderFields = self.header
                                     operation = webImageDownLoaderOperation.init(request: request,
                                                                                  progress: { (receivedSie, totalSize) in
                                                                                     innerPro(receivedSie,totalSize)
@@ -454,7 +454,7 @@ class imageLoadInSwift: NSObject {
                                                                                     innerCom(image,error,data,finished)
                                     })
                                     
-                                    self?.operationQueue.addOperation(operation)
+                                    self.operationQueue.addOperation(operation)
             }
         }
         
