@@ -20,6 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		18EDE0581F15BB8600C0C3E5 /* SDWebImageInSwift-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SDWebImageInSwift-Bridging-Header.h"; sourceTree = "<group>"; };
 		18F077C51F146BE900FD7BF0 /* SDWebImageInSwift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SDWebImageInSwift.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		18F077C81F146BE900FD7BF0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		18F077CA1F146BE900FD7BF0 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -30,7 +31,6 @@
 		18F077DD1F146CA200FD7BF0 /* ImageManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ImageManager.swift; sourceTree = "<group>"; };
 		18F077DF1F146D8E00FD7BF0 /* TableViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TableViewCell.swift; sourceTree = "<group>"; };
 		18F077E11F146DB700FD7BF0 /* GloBalDefine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GloBalDefine.swift; sourceTree = "<group>"; };
-		18F077E31F14727C00FD7BF0 /* SDWebImageInSwift-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SDWebImageInSwift-Bridging-Header.h"; path = "SDWebImageInSwift/SDWebImageInSwift-Bridging-Header.h"; sourceTree = "<group>"; };
 		18F077E41F14A4DC00FD7BF0 /* Indicator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Indicator.swift; sourceTree = "<group>"; };
 		18F077E61F14B07600FD7BF0 /* Box.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Box.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -49,7 +49,7 @@
 		18F077BC1F146BE900FD7BF0 = {
 			isa = PBXGroup;
 			children = (
-				18F077E31F14727C00FD7BF0 /* SDWebImageInSwift-Bridging-Header.h */,
+				18EDE0581F15BB8600C0C3E5 /* SDWebImageInSwift-Bridging-Header.h */,
 				18F077C71F146BE900FD7BF0 /* SDWebImageInSwift */,
 				18F077C61F146BE900FD7BF0 /* Products */,
 			);
@@ -334,6 +334,7 @@
 				18F077D91F146BE900FD7BF0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
