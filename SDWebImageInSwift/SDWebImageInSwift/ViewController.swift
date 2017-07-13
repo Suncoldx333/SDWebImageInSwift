@@ -92,10 +92,14 @@ extension ViewController : UITableViewDelegate,UITableViewDataSource{
         
         (cell as! TableViewCell).cellImage.setImageWith(imageUrl: url,
                                                         placeholderImage: nil,
+                                                        options: ImageGainOption.none,
                                                         progressBlock: { (receivedSize, totalSize) in
                                                             print("\(indexPath.row + 1): \(receivedSize)/\(totalSize)")
         }) { (image, error, finish) in
-            print("\(indexPath.row + 1): Finished")
+            
+            let errorInfo : String = error?.localizedDescription ?? "none"
+            
+            print("\(indexPath.row + 1): Finished with errorInfo : \(errorInfo)")
         }
     }
     

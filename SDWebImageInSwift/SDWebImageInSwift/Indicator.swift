@@ -20,6 +20,7 @@ enum IndicatorType {
 protocol Indicator {
     func startAnimation()
     func stopAniamtion()
+    func dealWithProgress(received : Float)
     
     var viewCenter : CGPoint {
         get set
@@ -58,6 +59,10 @@ class SystemIndicator: Indicator {
         systemIndicatorView.isHidden = true
     }
     
+    func dealWithProgress(received: Float) {
+        
+    }
+    
     init() {
         systemIndicatorView = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorViewStyle.white)
         systemIndicatorView.autoresizingMask = [UIViewAutoresizing.flexibleLeftMargin,.flexibleRightMargin,.flexibleBottomMargin,.flexibleTopMargin]
@@ -81,6 +86,10 @@ class ProgressIndicator: Indicator {
         progressIndicatorView.isHidden = true
     }
     
+    func dealWithProgress(received: Float) {
+        progressIndicatorView.setProgress(received, animated: true)
+    }
+    
     init() {
         progressIndicatorView = UIProgressView.init()
         progressIndicatorView.backgroundColor = ColorMethodho(hexValue: 0xffffff)
@@ -90,8 +99,9 @@ class ProgressIndicator: Indicator {
         progressIndicatorView.autoresizingMask = [UIViewAutoresizing.flexibleLeftMargin,.flexibleRightMargin,.flexibleBottomMargin,.flexibleTopMargin]
     }
     
-    func makeProgress(received : Float) {
-        progressIndicatorView.setProgress(received, animated: true)
-    }
+}
+
+class sectorLayer: CAShapeLayer {
+    
     
 }

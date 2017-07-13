@@ -15,6 +15,27 @@ let ScreenWidthUnit :CGFloat = UIScreen .main .bounds .size .width * 1.000 / 375
 
 typealias swiftNoPatameterBlock = () -> Void
 
+enum ImageGainError : Error {
+    case failedUrlError
+    case emptyUrlError
+}
+
+extension ImageGainError : LocalizedError{
+    var errorDescription: String?{
+        switch self {
+        case .failedUrlError:
+            return NSLocalizedString("It is a failed url", comment: "fail")
+        case .emptyUrlError:
+            return NSLocalizedString("It is an empty url", comment: "empty")
+        }
+    }
+}
+
+enum ImageGainOption {
+    case none
+    case reloadFaildUrl
+}
+
 //颜色，Eg:ColorMethodho(0x00c18b)
 func ColorMethodho(hexValue : Int) -> UIColor {
     let red   = ((hexValue & 0xFF0000) >> 16)

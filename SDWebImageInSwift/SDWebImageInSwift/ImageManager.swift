@@ -75,6 +75,7 @@ extension UIImageView{
     ///   - progressBlock: 图片下载进度
     func setImageWith(imageUrl : URL!,
                       placeholderImage : UIImage? = nil,
+                      options : ImageGainOption = ImageGainOption.none,
                       progressBlock : webImageLoadProgressBlock? = nil,
                       completeBlock : webImageCompletionWithFinishedBlock? = nil) {
         self.cancelImageGainOperationWith(key: "UIImageViewImageLoad")
@@ -90,11 +91,12 @@ extension UIImageView{
         
         let operation : webImageGainOperation =
             ImageManager.shareInstance.gainImage(with: imageUrl,
+                                                 options: options,
                                                       progress: {
                                                         (receivedSize, totalSize) in
-                                                        if let progress = progressBlock,let aindi = innerIndi as? ProgressIndicator{
+                                                        if let progress = progressBlock{
                                                             let percent = Double.init(receivedSize) * 1.000 / (Double.init(totalSize) * 1.000)
-                                                            aindi.makeProgress(received: Float.init(percent))
+                                                            innerIndi?.dealWithProgress(received: Float.init(percent))
                                                             progress(receivedSize,totalSize)
                                                         }
             },
@@ -173,6 +175,7 @@ class ImageManager: NSObject {
     var imageLoder : imageLoadInSwift = imageLoadInSwift.init()  //图片下载对象
     
     func gainImage(with url : URL,
+                   options : ImageGainOption = ImageGainOption.none,
                    progress : webImageLoadProgressBlock?,
                    complete : webImageCompletionWithFinishedBlock?) -> webImageGainOperation {
         
@@ -183,8 +186,23 @@ class ImageManager: NSObject {
             isFailedUrl = failedURLs.contains(url)
         }
         
-        if url.absoluteString.characters.count == 0 || isFailedUrl {
+        if url.absoluteString.characters.count == 0 {
+            if let innerCom = complete {
+                
+                innerCom(nil,ImageGainError.emptyUrlError,false)
+            }
             return operation!
+        }
+        
+        if isFailedUrl && options == .none {
+            
+            if let innerCom = complete {
+                
+                innerCom(nil,ImageGainError.failedUrlError,false)
+            }
+            return operation!
+            
+            
         }
         
         webImageCustomSynchronized(lock: runningoperatins as AnyObject) {
@@ -231,6 +249,8 @@ class ImageManager: NSObject {
                                                                 OperationQueue.main.addOperation {
                                                                     innerCom(innerImage,nil,finished)
                                                                 }
+                                                            }else{
+                                                                print("error image or data")
                                                             }
                                                             return
                                                         }
@@ -519,7 +539,7 @@ extension webImageDownLoaderOperation : URLSessionDataDelegate{
             }
             return
         }
-        
+        print("error = \(innerError)")
         self.completeBlock(nil,innerError,receiveData,false)
         
         receiveData = Data.init()
